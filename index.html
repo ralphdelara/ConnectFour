@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <script src="angular.min.js"></script>
+        <style>
+            html {
+                font-family:calibri;
+                font-size:20px;
+            }
+            table {
+                padding:10px;
+            }
+            table td{
+                padding:10px;
+            }
+            .board_table {
+                background:#056CB0;
+            }
+            .holes {
+                border-radius:50%;background:#fff;width:60px;height:60px;
+            }
+            .holes_1 {
+                border-radius:50%;background:#F9DF00;width:60px;height:60px;
+            }
+            .holes_2 {
+                border-radius:50%;background:#D92329;width:60px;height:60px;
+            }
+            .player1_hole {
+                border-radius:50%;background:#F9DF00;width:60px;height:60px;
+            }
+            .player2_hole {
+                border-radius:50%;background:#D92329;width:60px;height:60px;
+            }
+            .move {
+                cursor:pointer;
+                border-radius:50%;background:#eee;width:60px;height:60px;
+            }
+            .move:hover {
+                opacity: 0.6;
+            }
+            button {
+                display: inline-block;
+                padding:0.5em 3em;
+                border:0.16em solid #000;
+                margin:0 0.3em 0.3em 0;
+                box-sizing: border-box;
+                text-decoration:none;
+                text-transform:uppercase;
+                font-family:'Roboto',sans-serif;
+                font-weight:400;
+                color:#000;
+                text-align:center;
+                transition: all 0.15s;
+                cursor:pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <div ng-app="ConnectFour" align="center">
+            <div ng-controller="board">
+                <button ng-click="playVs('Player2')">Player vs Player</button>
+                <!--<button ng-click="playVs('Computer')">Player vs Computer</button>-->
+                <br>
+                <div ng-show="board_status">
+                    {{player1}} : <b>{{player1_score}}</b>&nbsp;vs&nbsp;
+                    {{player2}} : <b>{{player2_score}}</b>
+                    <br />
+                    {{play_message}}
+                </div>
+
+                <div ng-show="board_status">
+                    <table cellspacing='0'>
+                        <tr>
+                            <td ng-repeat="y in [0,1,2,3,4,5,6]"><div ng-click="placeDisc(y)" class="move"></div></td>
+                        </tr>
+                    </table>
+                </div>
+                <div ng-show="board_status">
+                    <table class='board_table' cellspacing='0'>
+                        <tr ng-repeat="x in [0,1,2,3,4,5]">
+                            <td ng-repeat="y in [0,1,2,3,4,5,6]">
+                                <div ng-class="playerMove[x][y] === 'Player1' ? 'holes_1' : (playerMove[x][y] === '' || typeof(playerMove[x][y]) === 'undefined' ? 'holes' : 'holes_2')"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <script>
+            var app = angular.module("ConnectFour", []);
+            app.controller("board", function($scope){
+                var turncount = 0;
+                $scope.board_status = false;
+                $scope.player1 = "";
+                $scope.player2 = "";
+                $scope.player1_score = 0;
+                $scope.player2_score = 0;
+                $scope.turn = "Player1";
+                $scope.play_message = "Player1 Turn";
+                $scope.playerMove = [];
+                var current_player = "";
+                var gamestate = 1;
+                for(x=0;x<=5;x++){
+                    $scope.playerMove[x] = new Array(6);
+                }
+                var countConsecutiveDiscH = 0;
+                var countConsecutiveDiscV = 0;
+                var countConsecutiveDiscD = 0;
+                var countConsecutiveDiscD2 = 0;
+                var countConsecutiveDiscD3 = 0;
+                var countConsecutiveDiscD4 = 0;
+
+                //methods
+                $scope.playVs = function(opponent){
+                    if($scope.player2 !== opponent){
+                        $scope.player1_score = 0;
+                        $scope.player2_score = 0;
+                    }
+                    $scope.player1 = "Player1";
+                    $scope.player2 = opponent;
+                    $scope.board_status = true;
+                    $scope.turn = "Player1";
+                    $scope.play_message = $scope.turn + " Turn";
+                    $scope.refreshValues();
+                    gamestate = 1;
+                    turncount = 0;
+                }
+                $scope.refreshValues = function(){
+                    for(x=0;x<=5;x++){
+                        for(y=0;y<=6;y++){
+                            $scope.playerMove[x][y] = "";
+                        }
+                    }
+                }
+                $scope.placeDisc = function(columnNo,){
+                    if(gamestate === 1){
+                        for(x=5;x>=0;x--){
+                            current_player = $scope.turn;
+                            if($scope.playerMove[x][columnNo] === ""){
+                                $scope.playerMove[x][columnNo] = $scope.turn;
+                                if($scope.turn === "Player1"){
+                                    $scope.turn = $scope.player2;
+                                }
+                                else {
+                                    $scope.turn = $scope.player1;
+                                }
+                                $scope.play_message = $scope.turn + " Turn";
+                                break;
+                            }
+                            else if((x+1) <= 5 && $scope.playerMove[x+1][parseInt(columnNo)] === ""){
+                                $scope.playerMove[x+1][parseInt(columnNo)] = $scope.turn;
+
+                                if($scope.turn === "Player1"){
+                                    $scope.turn = $scope.player2;
+                                }
+                                else {
+                                    $scope.turn = $scope.player1;
+                                }
+                                $scope.play_message = $scope.turn + " Turn";
+
+                                var el = document.getElementById("playerMove"+x+""+y);
+                                el.style.backgroundColor = "yellow";
+                                break;
+                            }
+                        }
+                        $scope.checkHorizontal();
+                        turncount++;
+                    }
+                }
+                $scope.checkHorizontal = function(){
+                    countConsecutiveDiscH = 0;
+                    for(x=0;x<=5;x++){
+                        countConsecutiveDiscH = 0;
+                        for(y=0;y<=6;y++){
+                            if(y-1 > -1){
+                                if($scope.playerMove[x][y-1] === $scope.playerMove[x][y] && $scope.playerMove[x][y] !== "" && $scope.playerMove[x][y-1] !== ""){
+                                    countConsecutiveDiscH++;
+                                }
+                                else {
+                                    countConsecutiveDiscH = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscH === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = $scope.playerMove[x][y] + " Wins - Horizontal";
+                                if($scope.playerMove[x][y] == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(x == 5 && y == 6 && countConsecutiveDiscH < 3 && gamestate === 1){
+                                $scope.checkVertical();
+                            }
+                        }
+                    }
+                    return
+                }
+                $scope.checkVertical = function(){
+                    countConsecutiveDiscV = 0;
+                    for(y=0;y<=6;y++){
+                        countConsecutiveDiscV = 0;
+                        for(x=0;x<=5;x++){
+                            if(x-1 > -1){
+                                if($scope.playerMove[x-1][y] === $scope.playerMove[x][y] && $scope.playerMove[x][y] !== "" && $scope.playerMove[x-1][y] !== ""){
+                                    countConsecutiveDiscV++;
+                                }
+                                else {
+                                    countConsecutiveDiscV = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscV === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = $scope.playerMove[x][y] + " Wins - Vertical";
+                                if($scope.playerMove[x][y] == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(x == 5 && y == 6 && countConsecutiveDiscV < 3 && gamestate === 1){
+                                $scope.checkDiagonal();
+                            }
+                        }
+                    }
+                }
+                $scope.checkDiagonal = function(){
+                    countConsecutiveDiscD = 0;
+                    var x = 0;
+                    var y = 0;
+                    var z = 0;
+                    while(x<=2){
+                        y = 0;
+                        z = x;
+                        while(y<=5-x){
+                            if(z-1 > -1 && y-1 > -1){
+                                if($scope.playerMove[z-1][y-1] === $scope.playerMove[z][y] && $scope.playerMove[z][y] !== "" && $scope.playerMove[z-1][y-1] !== ""){
+                                    countConsecutiveDiscD++;
+                                }
+                                else {
+                                    countConsecutiveDiscD = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscD === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = current_player + " Wins - Diagonal";
+                                if(current_player == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(x == 2 && y == 3 && countConsecutiveDiscD < 3 && gamestate === 1){
+                                $scope.checkDiagonal2();
+                            }
+                            y++;
+                            z++;
+                        }
+                        x++;
+                    }
+                }
+                $scope.checkDiagonal2 = function(){
+                    countConsecutiveDiscD2 = 0;
+                    var x = 0;
+                    var y = 1;
+                    var z = 0;
+                    while(y<=3){
+                        x = 0;
+                        z = y;
+                        while(x<=(6-y)){
+                            if(z-1 > -1 && x-1 > -1){
+                                if($scope.playerMove[x-1][z-1] === $scope.playerMove[x][z] && $scope.playerMove[x][z] !== "" && $scope.playerMove[x-1][z-1] !== ""){
+                                    countConsecutiveDiscD2++;
+                                }
+                                else {
+                                    countConsecutiveDiscD2 = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscD2 === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = current_player + " Wins - Diagonal";
+                                if(current_player == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(y == 3 && x == (6-y) && countConsecutiveDiscD2 < 3 && gamestate === 1){
+                                $scope.checkDiagonal3();
+                            }
+                            x++;
+                            z++;
+                        }
+                        y++;
+                    }
+                }
+                $scope.checkDiagonal3 = function(){
+                    countConsecutiveDiscD3 = 0;
+                    var x = 0;
+                    var y = 3;
+                    var z = 0;
+                    while(y<=5){
+                        x = 0;
+                        while(x<=y){
+                            z = y-x;
+                            if(x-1 > -1){
+                                if($scope.playerMove[x-1][z+1] === $scope.playerMove[x][z] && $scope.playerMove[x][z] !== "" && $scope.playerMove[x-1][z+1] !== ""){
+                                    countConsecutiveDiscD3++;
+                                }
+                                else {
+                                    countConsecutiveDiscD3 = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscD3 === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = current_player + " Wins - Diagonal";
+                                if(current_player == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(y == 5 && x == y && countConsecutiveDiscD3 < 3 && gamestate === 1){
+                                $scope.checkDiagonal4();
+                            }
+                            x++;
+                        }
+                        y++;
+                    }
+                }
+                $scope.checkDiagonal4 = function(){
+                    countConsecutiveDiscD4 = 0;
+                    var x = 0;
+                    var y = 0;
+                    var z = 6;
+                    var w = 0;
+                    while(y<=2){
+                        x = 0;
+                        z = 6;
+                        w = y;
+                        while(x<=(5-y)){
+                            if(w-1 > -1 && z+1 < 7){
+                                if($scope.playerMove[w-1][z+1] === $scope.playerMove[w][z] && $scope.playerMove[w][z] !== "" && $scope.playerMove[w-1][z+1] !== ""){
+                                    countConsecutiveDiscD4++;
+                                }
+                                else {
+                                    countConsecutiveDiscD4 = 0;
+                                }
+                            }
+                            if(countConsecutiveDiscD4 === 3 && gamestate === 1){
+                                gamestate = 0;
+                                $scope.play_message = current_player + " Wins - Diagonal";
+                                if(current_player == "Player1"){
+                                    $scope.player1_score++;
+                                }
+                                else {
+                                    $scope.player2_score++;
+                                }
+                                break;
+                            }
+                            if(y == 2 && x == (5-y) && countConsecutiveDiscD4 < 3 && gamestate === 1){
+                                $scope.checkDraw();
+                            }
+                            x++;
+                            z--;
+                            w++;
+                        }
+                        y++;
+                    }
+                }
+                $scope.checkDraw = function(){
+                    if(turncount >= 42){
+                        gamestate = 0;
+                        $scope.play_message = "Draw";
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
